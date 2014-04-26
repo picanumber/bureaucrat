@@ -17,7 +17,7 @@ class Expected
 	bool gotHam;
 	Expected() {} // used internally
 public:
-	// --------------------------Construction
+	// ------------------------- Construction
 	Expected(T const &rhs)
 		: ham(rhs)
 		, gotHam(true)
@@ -40,7 +40,7 @@ public:
 		if (gotHam) new(&ham) T(std::move(rhs.ham));
 		else new(&spam) std::exception_ptr(std::move(rhs.spam));
 	}
-	// ---------------------- Swapping
+	// ----------------------------- Swapping
 	void swap(Expected &rhs)
 	{
 		if (gotHam)
@@ -71,7 +71,7 @@ public:
 			}
 		}
 	}
-	// ------------------ Building from exception
+	// -------------- Building from exception
 	template<class E>
 	static Expected<T> fromException(E const &exception)
 	{
@@ -95,7 +95,7 @@ public:
 	{
 		return fromException(std::current_exception());
 	}
-	// -------------------------- Access
+	// ------------------------------- Access
 	bool valid() const
 	{
 		return gotHam;
@@ -112,7 +112,7 @@ public:
 		if (!gotHam) std::rethrow_exception(spam);
 		return ham;
 	}
-	// ------------------- probing for type
+	// --------------------- probing for type
 	template<class E>
 	bool hasException() const
 	{
@@ -129,7 +129,7 @@ public:
 		}
 		return false;
 	}
-	// -------------------- Icing
+	// -------------------------------- Icing
 	template<class F>
 	static Expected fromCode(F fun)
 	{
