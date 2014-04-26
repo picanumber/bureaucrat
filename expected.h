@@ -142,7 +142,6 @@ public:
 			return fromException();
 		}
 	}
-
 };
 
 
