@@ -117,7 +117,7 @@ public:
 		if (!gotHam) std::rethrow_exception(spam);
 		return ham;
 	}
-	// --------------------- probing for type
+	// --------------------- Probing for type
 	template<class E>
 	bool hasException() const
 	{
