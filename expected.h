@@ -79,8 +79,7 @@ public:
 		{
 			throw std::invalid_argument("slicing detected");
 		}
-		return fromException(
-			std::make_exception_ptr(exception));
+		return fromException(std::make_exception_ptr(exception));
 	}
 
 	static Expected<T> fromException(std::exception_ptr p)
