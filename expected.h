@@ -2,152 +2,160 @@
 #define EXPECTED_HPP_IMPL
 
 
+// ------------------------------- # INCLUDES
 #include <exception>
 #include <algorithm>
 #include <stdexcept>
+// ~ INCLUDES -------------------------------
 
 
-/*
- * @ class Expected
- * @ brief Error handling type
- * Code implementation of the A. Alexandrescu talk
- * "Systematic error handling in C++"
- * */
-template<class T>
-class Expected
+namespace expect
 {
-	union {
-		T ham;
-		std::exception_ptr spam;
-	};
-	bool gotHam;
-	Expected() {} // used internally
-public:
-	// ------------------------- Construction
-	Expected(T const &rhs)
-		: ham(rhs)
-		, gotHam(true)
+	/*
+	* @ class Expected
+	* @ brief Error handling type
+	* Code implementation of the A. Alexandrescu talk
+	* "Systematic error handling in C++"
+	* */
+	template<class T>
+	class Expected
 	{
-	}
-	Expected(T &&rhs)
-		: ham(std::move(rhs))
-		, gotHam(true)
-	{
-	}
-	Expected(Expected const &rhs)
-		: gotHam(rhs.gotHam)
-	{
-		if (gotHam) new(&ham) T(rhs.ham);
-		else new(&spam) std::exception_ptr(rhs.spam);
-	}
-	Expected(Expected &&rhs)
-		: gotHam(rhs.gotHam)
-	{
-		if (gotHam) new(&ham) T(std::move(rhs.ham));
-		else new(&spam) std::exception_ptr(std::move(rhs.spam));
-	}
-	// ----------------------------- Swapping
-	void swap(Expected &rhs)
-	{
-		if (gotHam)
+		union {
+			T ham;
+			std::exception_ptr spam;
+		};
+		bool gotHam;
+		Expected() {} // used internally
+	public:
+		// ------------------------- Construction
+		Expected(T const &rhs)
+			: ham(rhs)
+			, gotHam(true)
 		{
-			if (rhs.gotHam)
+		}
+
+		Expected(T &&rhs)
+			: ham(std::move(rhs))
+			, gotHam(true)
+		{
+		}
+
+		Expected(Expected const &rhs)
+			: gotHam(rhs.gotHam)
+		{
+			if (gotHam) new(&ham) T(rhs.ham);
+			else new(&spam) std::exception_ptr(rhs.spam);
+		}
+
+		Expected(Expected &&rhs)
+			: gotHam(rhs.gotHam)
+		{
+			if (gotHam) new(&ham) T(std::move(rhs.ham));
+			else new(&spam) std::exception_ptr(std::move(rhs.spam));
+		}
+		// ----------------------------- Swapping
+		void swap(Expected &rhs)
+		{
+			if (gotHam)
 			{
-				using std::swap;
-				swap(ham, rhs.ham);
+				if (rhs.gotHam)
+				{
+					using std::swap;
+					swap(ham, rhs.ham);
+				}
+				else
+				{
+					auto t = std::move(rhs.spam);
+					new(&rhs.ham) T(std::move(ham));
+					new(&spam) std::exception_ptr(t);
+					std::swap(gotHam, rhs.gotHam);
+				}
 			}
 			else
 			{
-				auto t = std::move(rhs.spam);
-				new(&rhs.ham) T(std::move(ham));
-				new(&spam) std::exception_ptr(t);
-				std::swap(gotHam, rhs.gotHam);
+				if (rhs.gotHam)
+				{
+					rhs.swap(*this);
+				}
+				else
+				{
+					spam.swap(rhs.spam);
+					std::swap(gotHam, rhs.gotHam);
+				}
 			}
 		}
-		else
+		// -------------- Building from exception
+		template<class E>
+		static Expected<T> fromException(E const &exception)
 		{
-			if (rhs.gotHam)
+			if (typeid(exception) != typeid(E))
 			{
-				rhs.swap(*this);
+				throw std::invalid_argument("slicing detected");
 			}
-			else
-			{
-				spam.swap(rhs.spam);
-				std::swap(gotHam, rhs.gotHam);
-			}
+			return fromException(std::make_exception_ptr(exception));
 		}
-	}
-	// -------------- Building from exception
-	template<class E>
-	static Expected<T> fromException(E const &exception)
-	{
-		if (typeid(exception) != typeid(E))
+
+		static Expected<T> fromException(std::exception_ptr p)
 		{
-			throw std::invalid_argument("slicing detected");
+			Expected<T> result;
+			result.gotHam = false;
+			new(&result.spam) std::exception_ptr(std::move(p));
+			return result;
 		}
-		return fromException(std::make_exception_ptr(exception));
-	}
 
-	static Expected<T> fromException(std::exception_ptr p)
-	{
-		Expected<T> result;
-		result.gotHam = false;
-		new(&result.spam) std::exception_ptr(std::move(p));
-		return result;
-	}
+		static Expected<T> fromException()
+		{
+			return fromException(std::current_exception());
+		}
+		// ------------------------------- Access
+		bool valid() const
+		{
+			return gotHam;
+		}
 
-	static Expected<T> fromException()
-	{
-		return fromException(std::current_exception());
-	}
-	// ------------------------------- Access
-	bool valid() const
-	{
-		return gotHam;
-	}
-
-	T& get()
-	{
-		if (!gotHam) std::rethrow_exception(spam);
-		return ham;
-	}
-
-	T const& get() const
-	{
-		if (!gotHam) std::rethrow_exception(spam);
-		return ham;
-	}
-	// --------------------- Probing for type
-	template<class E>
-	bool hasException() const
-	{
-		try
+		T& get()
 		{
 			if (!gotHam) std::rethrow_exception(spam);
+			return ham;
 		}
-		catch (E const &object)
+
+		T const& get() const
 		{
-			return true;
+			if (!gotHam) std::rethrow_exception(spam);
+			return ham;
 		}
-		catch (...)
+		// --------------------- Probing for type
+		template<class E>
+		bool hasException() const
 		{
+			try
+			{
+				if (!gotHam) std::rethrow_exception(spam);
+			}
+			catch (E const &object)
+			{
+				return true;
+			}
+			catch (...)
+			{
+			}
+			return false;
 		}
-		return false;
-	}
-	// -------------------------------- Icing
-	template<class F>
-	static Expected fromCode(F fun)
-	{
-		try
+		// -------------------------------- Icing
+		template<class F>
+		static Expected fromCode(F fun)
 		{
-			return Expected(fun());
+			try
+			{
+				return Expected(fun());
+			}
+			catch (...)
+			{
+				return fromException();
+			}
 		}
-		catch (...)
-		{
-			return fromException();
-		}
-	}
-};
+	};
+}
 
 
 #endif
