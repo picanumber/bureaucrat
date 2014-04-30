@@ -11,12 +11,12 @@
 
 namespace expect
 {
-	/*
+	/**
 	* @ class Expected
 	* @ brief Error handling type
 	* Code implementation of the A. Alexandrescu talk
-	* "Systematic error handling in C++"
-	* */
+	* "Systematic error handling in C++" 
+	*/
 	template<class T>
 	class Expected
 	{
