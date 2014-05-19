@@ -12,6 +12,7 @@ namespace tim
 	/**
 	* @ class measure
 	* @ brief Class to measure the execution time of a callable
+	*
 	* Example usage
 	*     cout << measure<>::execution( [&]() {
 	*         // some task
