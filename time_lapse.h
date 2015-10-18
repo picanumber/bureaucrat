@@ -1,11 +1,9 @@
 #ifndef TIME_LAPSE_HPP_SLSK253_IMPL
 #define TIME_LAPSE_HPP_SLSK253_IMPL
 
-
-// ------------------------------- # INCLUDES
 #include <chrono>
-// ~ INCLUDES -------------------------------
 
+#define fw(what) std::forward<decltype(what)>(what)
 
 namespace tim
 {
@@ -23,11 +21,11 @@ namespace tim
 		* @ brief Returns the quantity (count) of the elapsed time as TimeT units
 		*/
 		template<typename F, typename ...Args>
-		static typename TimeT::rep execution(F func, Args&&... args)
+		static typename TimeT::rep execution(F&& func, Args&&... args)
 		{
 			auto start = ClockT::now();
 			
-			func(std::forward<Args>(args)...);
+			fw(func)(std::forward<Args>(args)...);
 
 			auto duration = std::chrono::duration_cast<TimeT>(ClockT::now() - start);
 
@@ -39,17 +37,18 @@ namespace tim
 		* @ brief Returns the duration (in chrono's type system) of the elapsed time
 		*/
 		template<typename F, typename... Args>
-		static TimeT duration(F func, Args&&... args)
+		static TimeT duration(F&& func, Args&&... args)
 		{
 			auto start = ClockT::now();
 			
-			func(std::forward<Args>(args)...);
+			fw(func)(std::forward<Args>(args)...);
 			
 			return std::chrono::duration_cast<TimeT>(ClockT::now() - start);
 		}
 	};
 }
 
+#undef fw
 
 #endif
 
